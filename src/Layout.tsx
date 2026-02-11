@@ -1,0 +1,61 @@
+import React, {useState} from "react";
+import { Sidebar } from "./Sidebar";
+import {Routes, Route, useLocation} from "react-router-dom";
+import LoginPage from "./LoginPage";
+
+import ForgotPassword from "./ForgotPassword";
+import HomePage from "./home/HomePage";
+import RegisterPage from "./RegisterPage";
+import SettingsLLM from "./settings/SettingsLLM";
+
+import AlignmentManagerPage from "./onlinealign/AlignmentManagerPage";
+import DocAlignmentPage from "./onlinealign/DocAlignmentPage";
+import {ParaAlignmentPage, SentAlignmentPage} from "./onlinealign/CombinesAlignmentPage";
+import PromptManager from "./settings/PromptManager";
+import TagManager from "./settings/TagManager";
+// import ParaAlignmentPage from "./onlinealign/ParaAlignmentPage";
+
+
+const Layout = () => {
+    const location = useLocation();
+    const path = location.pathname;
+    // Routes where we do NOT want the sidebar
+    const noSidebarRoutes = ["/", "/login", "/forgetPassword", "/register"];
+    const showSidebar = !noSidebarRoutes.some((r) => path === r || path.startsWith(r + "/"));
+    const [collapsed, setCollapsed] = useState(false);
+
+    // Dynamic content margin based on sidebar width
+    const sidebarWidth = collapsed ? 64 : 224; // w-16 = 64px, w-56 = 224px
+
+    return (
+        <div className="flex">
+            {showSidebar && (
+                <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
+            )}
+
+            <div
+                className="flex-1 transition-all duration-300"
+                style={{
+                    marginLeft: showSidebar ? sidebarWidth : 0,
+                }}
+            >
+                <Routes>
+                    <Route path="/" element={<LoginPage />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/forgetPassword" element={<ForgotPassword />} />
+                    <Route path="/promptmanager" element={<PromptManager />} />
+                    <Route path="/tagManager" element={<TagManager />} />
+                    <Route path="/register" element={<RegisterPage />} />
+                    <Route path="/dashboard" element={<HomePage />} />
+                    <Route path="/settings" element={<SettingsLLM />} />
+                    <Route path="/docalign" element={<DocAlignmentPage />} />
+                    <Route path="/docalign/:documentId" element={<DocAlignmentPage />} />
+                    <Route path="/alignpara/:documentId" element={<ParaAlignmentPage />} />
+                    <Route path="/alignsent/:documentId" element={<SentAlignmentPage />} />
+                </Routes>
+            </div>
+        </div>
+    );
+};
+
+export default Layout;
