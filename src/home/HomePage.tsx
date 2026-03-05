@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Modal } from "antd";
 
 interface AlignmentStats {
     totalDocs: number;
@@ -27,13 +28,31 @@ const HomePage = () => {
     const [stats, setStats] = useState<AlignmentStats | null>(null);
     const [docs, setDocs] = useState<AlignedDocument[]>([]);
 
-    useEffect(() => {
+    const loadData = () => {
         window.api.getHomeOverview().then((res) => {
             console.log("home res", res);
             setStats(res.stats);
             setDocs(res.documents);
         });
+    };
+
+    useEffect(() => {
+        loadData();
     }, []);
+
+    const handleDelete = (doc: AlignedDocument) => {
+        Modal.confirm({
+            title: "Delete Align Task",
+            content: `Are you sure you want to delete "${doc.title}"? This action cannot be undone.`,
+            okText: "Delete",
+            okType: "danger",
+            cancelText: "Cancel",
+            onOk: async () => {
+                await window.api.deleteDocument(doc.id);
+                loadData();
+            },
+        });
+    };
 
     if (!stats) return <div className="p-6">Loading…</div>;
 
@@ -113,12 +132,20 @@ const HomePage = () => {
                                 {doc.updated_at}
                             </Td>
                             <Td center>
-                                <Link
-                                    to={(alignPathByStatus[doc.status] ?? alignPathByStatus["pending-doc"])(doc.id)}
-                                    className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
-                                >
-                                    {doc.status === "completed" ? "Review" : "Align"}
-                                </Link>
+                                <div className="flex items-center justify-center gap-2">
+                                    <Link
+                                        to={(alignPathByStatus[doc.status] ?? alignPathByStatus["pending-doc"])(doc.id)}
+                                        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded bg-blue-600 text-white hover:bg-blue-700"
+                                    >
+                                        {doc.status === "completed" ? "Review" : "Align"}
+                                    </Link>
+                                    <button
+                                        onClick={() => handleDelete(doc)}
+                                        className="inline-flex items-center gap-1 px-3 py-1.5 text-sm rounded bg-red-600 text-white hover:bg-red-700"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
                             </Td>
                         </tr>
                     ))}
