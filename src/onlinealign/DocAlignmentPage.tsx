@@ -207,7 +207,7 @@ const DocAlignmentPage: React.FC = () => {
         try {
             const id = await saveDocument();
             message.success("Document saved");
-            navigate(`/aligner/${id}`);
+            navigate(`/docalign/${id}`);
         } catch (e) {
             console.error(e);
             message.error("Failed to save document");
