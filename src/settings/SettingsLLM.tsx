@@ -14,6 +14,7 @@ const LLMSettingsPage = () => {
     const [showNewKey, setShowNewKey] = useState(false);
     const [newModel, setNewModel] = useState({ model_name: "", base_url: "", api_key: "" });
     const [adding, setAdding] = useState(false);
+    const [testingId, setTestingId] = useState<string | null>(null);
 
     useEffect(() => {
         window.api.getLLMModels().then((rows) => {
@@ -51,6 +52,22 @@ const LLMSettingsPage = () => {
             message.error(err.message || "Save/Test failed");
         } finally {
             setSavingId(null);
+        }
+    };
+
+    const testModel = async (record: LLMRow) => {
+        setTestingId(record.id);
+        try {
+            await window.api.testLLMModel({
+                base_url: record.base_url,
+                api_key: record.api_key,
+                model_name: record.model_name,
+            });
+            message.success("Connection successful");
+        } catch (err: any) {
+            message.error(err.message || "Test failed");
+        } finally {
+            setTestingId(null);
         }
     };
 
@@ -227,17 +244,16 @@ const LLMSettingsPage = () => {
                                                     {savingId === model.id ? "Saving…" : "Save & Test"}
                                                 </button>
                                                 <button
-                                                    className="flex items-center gap-1.5 border border-gray-200 hover:border-gray-300 bg-white hover:bg-gray-50 px-3 py-1.5 rounded-md text-xs font-medium text-gray-600 transition-colors"
-                                                    onClick={() =>
-                                                        window.api.testLLMModel({
-                                                            base_url: model.base_url,
-                                                            api_key: model.api_key,
-                                                            model_name: model.model_name,
-                                                        })
-                                                    }
+                                                    className="flex items-center gap-1.5 border border-gray-200 hover:border-gray-300 bg-white hover:bg-gray-50 px-3 py-1.5 rounded-md text-xs font-medium text-gray-600 disabled:opacity-60 transition-colors"
+                                                    disabled={testingId === model.id}
+                                                    onClick={() => testModel(model)}
                                                 >
-                                                    <Zap className="w-3.5 h-3.5 text-yellow-500" />
-                                                    Test
+                                                    {testingId === model.id ? (
+                                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                    ) : (
+                                                        <Zap className="w-3.5 h-3.5 text-yellow-500" />
+                                                    )}
+                                                    {testingId === model.id ? "Testing…" : "Test"}
                                                 </button>
                                             </div>
                                         </td>
