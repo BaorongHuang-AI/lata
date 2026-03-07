@@ -1,14 +1,12 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { message } from 'antd';
 import {useNavigate, useParams} from 'react-router-dom';
 import { AlignmentHeader } from '../components/alignment/AlignmentHeader';
-import { SourcePanel, TargetPanel } from '../components/alignment/LinePanel';
-import { LinkCanvas } from '../components/alignment/LinkCanvas';
+import { AlignmentTable } from '../components/alignment/AlignmentTable';
 import { ModalsContainer } from '../components/alignment/ModalsContainer';
 import { useAlignmentState } from '../hooks/useAlignmentState';
 import { useAlignmentHistory } from '../hooks/useAlignmentHistory';
 import { useLinkingMode } from '../hooks/useLinkingMode';
-import { useMousePosition } from '../hooks/useMousePosition';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import {downloadCESAlignmentZip} from '../utils/xmlExport';
 import { getLinkType } from '../utils/linkHelpers';
@@ -243,8 +241,6 @@ const AlignmentPage: React.FC<AlignmentPageProps> = ({ alignmentType }) => {
     //     // Call it
     //     handleMetadataSave();
     // }, [sourceMeta, targetMeta]);
-    const { mousePosition, handleMouseMove } = useMousePosition();
-
     // Local state
     const [selectedLinkForDetails, setSelectedLinkForDetails] = useState<string | null>(null);
     const [editingLine, setEditingLine] = useState<{
@@ -271,11 +267,6 @@ const AlignmentPage: React.FC<AlignmentPageProps> = ({ alignmentType }) => {
         field: 'comment' | 'lineNumber';
     } | null>(null);
     const [editValue, setEditValue] = useState('');
-
-    // Refs
-    const sourceContainerRef = useRef<HTMLDivElement>(null);
-    const targetContainerRef = useRef<HTMLDivElement>(null);
-    const svgRef = useRef<SVGSVGElement>(null);
 
     // Keyboard shortcuts
     useKeyboardShortcuts({
@@ -852,7 +843,7 @@ const AlignmentPage: React.FC<AlignmentPageProps> = ({ alignmentType }) => {
     };
 
     return (
-        <div className="h-screen flex flex-col bg-gray-50" onMouseMove={handleMouseMove}>
+        <div className="h-screen flex flex-col bg-gray-50">
             <AlignmentHeader
                 alignmentType={alignmentType}
                 sourceMetadata={sourceMeta}
@@ -879,69 +870,34 @@ const AlignmentPage: React.FC<AlignmentPageProps> = ({ alignmentType }) => {
                 onCreateLink={handleCreateManualLink}
             />
 
-            <div className="flex-1 flex overflow-hidden relative">
-                <LinkCanvas
-                    ref={svgRef}
-                    links={links}
-                    sourceLines={sourceLines}
-                    targetLines={targetLines}
-                    onLinkClick={(linkId) => {
-                        setSelectedLinkForDetails(linkId);
-                        setModals((m) => ({ ...m, linkDetails: true }));
-                    }}
-                    pendingSourceIds={pendingSourceIds}
-                    pendingTargetIds={pendingTargetIds}
-                    clickLinkingStep={clickLinkingStep}
-                    linkingMode={linkingMode}
-                    selectedSourceIds={selectedSourceIds}
-                    selectedTargetIds={selectedTargetIds}
-                    linkConfidence={linkFormState.confidence}
-                    sourceContainerRef={sourceContainerRef}
-                    targetContainerRef={targetContainerRef}
-                />
-
-                <SourcePanel
-                    alignmentType={alignmentType}
-                    ref={sourceContainerRef}
-                    lines={sourceLines}
-                    metadata={sourceMeta}
-                    fontSettings={fontSettings}
-                    links={links}
-                    selectedIds={linkingMode === 'manual' ? selectedSourceIds : pendingSourceIds}
-                    editingLine={editingLine}
-                    linkingMode={linkingMode}
-                    onLineClick={handleLineClick}
-                    onEditLine={(id, text) => setEditingLine({ type: 'source', id, text })}
-                    onSaveEdit={saveLineEdit}
-                    onCancelEdit={() => setEditingLine(null)}
-                    onToggleFavorite={(id) => toggleLineFavorite('source', id)}
-                    onEditComment={(id, comment) => openEditModal('line', id, 'comment', comment)}
-                    onEditLineNumber={(id, number) => openEditModal('line', id, 'lineNumber', number)}
-                    onMergeLines={() => mergeLines('source')} // ADD THIS
-                    onSplitLine={(lineId, pos) => splitLine('source', lineId, pos)} // ADD THIS
-                />
-
-                <TargetPanel
-                    alignmentType={alignmentType}
-                    ref={targetContainerRef}
-                    lines={targetLines}
-                    metadata={targetMeta}
-                    fontSettings={fontSettings}
-                    links={links}
-                    selectedIds={linkingMode === 'manual' ? selectedTargetIds : pendingTargetIds}
-                    editingLine={editingLine}
-                    linkingMode={linkingMode}
-                    onLineClick={handleLineClick}
-                    onEditLine={(id, text) => setEditingLine({ type: 'target', id, text })}
-                    onSaveEdit={saveLineEdit}
-                    onCancelEdit={() => setEditingLine(null)}
-                    onToggleFavorite={(id) => toggleLineFavorite('target', id)}
-                    onEditComment={(id, comment) => openEditModal('line', id, 'comment', comment)}
-                    onEditLineNumber={(id, number) => openEditModal('line', id, 'lineNumber', number)}
-                    onMergeLines={() => mergeLines('target')} // ADD THIS
-                    onSplitLine={(lineId, pos) => splitLine('target', lineId, pos)} // ADD THIS
-                />
-            </div>
+            <AlignmentTable
+                alignmentType={alignmentType}
+                sourceLines={sourceLines}
+                targetLines={targetLines}
+                links={links}
+                sourceMeta={sourceMeta}
+                targetMeta={targetMeta}
+                fontSettings={fontSettings}
+                linkingMode={linkingMode}
+                selectedSourceIds={selectedSourceIds}
+                selectedTargetIds={selectedTargetIds}
+                pendingSourceIds={pendingSourceIds}
+                pendingTargetIds={pendingTargetIds}
+                editingLine={editingLine}
+                onLineClick={handleLineClick}
+                onEditLine={(type, id, text) => setEditingLine({ type, id, text })}
+                onSaveEdit={saveLineEdit}
+                onCancelEdit={() => setEditingLine(null)}
+                onToggleFavorite={(type, id) => toggleLineFavorite(type, id)}
+                onEditComment={(type, id, comment) => openEditModal('line', id, 'comment', comment)}
+                onEditLineNumber={(type, id, lineNumber) => openEditModal('line', id, 'lineNumber', lineNumber)}
+                onMergeLines={(type) => mergeLines(type)}
+                onSplitLine={(type, lineId, pos) => splitLine(type, lineId, pos)}
+                onLinkClick={(linkId) => {
+                    setSelectedLinkForDetails(linkId);
+                    setModals((m) => ({ ...m, linkDetails: true }));
+                }}
+            />
 
             <ModalsContainer
                 documentId={documentId}

@@ -1,8 +1,40 @@
-import React from 'react';
-import { Slider, Input } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Slider, Input, Select } from 'antd';
 import { getConfidenceColor, getConfidenceLabel } from '../../../utils/confidence';
 
 const { TextArea } = Input;
+
+const STRATEGY_SEPARATOR = ' | ';
+
+function parseStrategy(value?: string): string[] {
+    if (!value) return [];
+    return Array.from(
+        new Set(
+            value
+                .split(STRATEGY_SEPARATOR)
+                .map(s => s.trim())
+                .filter(Boolean)
+        )
+    );
+}
+
+function getCanonicalOrder(tags: any[]): Map<string, number> {
+    return new Map(tags.map((t, i) => [t.name, i]));
+}
+
+function stringifyStrategy(values: string[], tags: any[]): string {
+    const orderMap = getCanonicalOrder(tags);
+    return Array.from(new Set(values))
+        .sort((a, b) => {
+            const ia = orderMap.get(a);
+            const ib = orderMap.get(b);
+            if (ia == null && ib == null) return a.localeCompare(b);
+            if (ia == null) return 1;
+            if (ib == null) return -1;
+            return ia - ib;
+        })
+        .join(STRATEGY_SEPARATOR);
+}
 
 interface LinkFormFieldsProps {
     linkFormState: {
@@ -21,6 +53,18 @@ export const LinkFormFields: React.FC<LinkFormFieldsProps> = ({
                                                                   onStrategyChange,
                                                                   onCommentChange,
                                                               }) => {
+    const [tags, setTags] = useState<any[]>([]);
+
+    useEffect(() => {
+        window.api.listTags().then(setTags);
+    }, []);
+
+    const selectedValues = parseStrategy(linkFormState.strategy);
+
+    const handleSelectChange = (values: string[]) => {
+        onStrategyChange?.(stringifyStrategy(values, tags));
+    };
+
     return (
         <>
             <div>
@@ -33,7 +77,7 @@ export const LinkFormFields: React.FC<LinkFormFieldsProps> = ({
                     step={0.05}
                     value={linkFormState.confidence}
                     onChange={onConfidenceChange}
-                    disabled={!onConfidenceChange} // Disable if no handler
+                    disabled={!onConfidenceChange}
                 />
                 <div className="flex justify-between mt-2">
           <span
@@ -47,14 +91,18 @@ export const LinkFormFields: React.FC<LinkFormFieldsProps> = ({
 
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Translation Strategy (Optional)
+                    Translation Technique (Optional)
                 </label>
-                <TextArea
-                    rows={2}
-                    value={linkFormState.strategy}
-                    onChange={(e) => onStrategyChange?.(e.target.value)}
-                    placeholder="e.g., Syntactic condensation for better flow..."
-                    disabled={!onStrategyChange} // Disable if no handler
+                <Select<string[]>
+                    mode="multiple"
+                    allowClear
+                    placeholder="Select translation techniques"
+                    value={selectedValues}
+                    onChange={handleSelectChange}
+                    options={tags}
+                    fieldNames={{ label: 'name', value: 'name' }}
+                    style={{ width: '100%' }}
+                    disabled={!onStrategyChange}
                 />
             </div>
 
@@ -67,7 +115,7 @@ export const LinkFormFields: React.FC<LinkFormFieldsProps> = ({
                     value={linkFormState.comment}
                     onChange={(e) => onCommentChange?.(e.target.value)}
                     placeholder="Add any notes or observations..."
-                    disabled={!onCommentChange} // Disable if no handler
+                    disabled={!onCommentChange}
                 />
             </div>
         </>
