@@ -1,0 +1,16 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+@import "@uiw/react-md-editor/markdown-editor.css";
+@import "@uiw/react-markdown-preview/markdown.css";
+@import 'react-quill/dist/quill.snow.css';
+
+.font-arabic {
+    font-family: "Amiri", "Scheherazade", serif;
+}
+.ant-btn-primary {
+    background-color: var(--ant-primary-color);
+}
+/*body {*/
+/*    background-color: #f3f4f6; !* example bg-base-200 *!*/
+/*}*/
