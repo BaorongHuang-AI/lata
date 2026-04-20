@@ -7,6 +7,7 @@ import { WebpackPlugin } from '@electron-forge/plugin-webpack';
 
 import { mainConfig } from './webpack.main.config';
 import { rendererConfig } from './webpack.renderer.config';
+import 'dotenv/config';
 
 const config: ForgeConfig = {
   packagerConfig: {
